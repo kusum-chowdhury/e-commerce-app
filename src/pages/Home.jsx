@@ -1,41 +1,60 @@
-import { CardMedia } from '@mui/material';
-import React from 'react';
-import { useState } from 'react';
-import { useEffect } from 'react';
 
-import { Grid } from '@mui/material';
-import { Card } from '@mui/material';
-import { Container } from '@mui/material';
-import { CardContent } from '@mui/material';
-import { Typography } from '@mui/material';
-import { Rating } from '@mui/material';
-import { useTheme } from '@emotion/react';
-import { CardActions } from '@mui/material';
-import { Button } from '@mui/material';
-import { ShoppingCartSharp } from '@mui/icons-material';
+import { useTheme } from "@emotion/react";
+import { ShoppingCartSharp } from "@mui/icons-material";
+import { Card } from "@mui/material";
+import { Grid } from "@mui/material";
+import { CardMedia } from "@mui/material";
+import { Typography } from "@mui/material";
+import { Button } from "@mui/material";
+import { IconButton } from "@mui/material";
+import { CardActions } from "@mui/material";
+import { Rating } from "@mui/material";
+import { CardContent } from "@mui/material";
+import { Container } from "@mui/material";
+import React from "react";
+import { useEffect } from "react";
+import { useState } from "react";
+import { useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
+import { useSearchParams } from "react-router-dom";
+import { addToCart } from "../feature/cart-slice";
+import { fetchAllProducts } from "../feature/products-slice";
+
 
 //component for home page
 
 // fetch products from the api 
 // set to the set products 
 export default function Home() {
+  const [searchParams] = useSearchParams();
+   const category = searchParams.get("category");
+   const searchTerm = searchParams.get("searchterm");
     const theme = useTheme();
-    const [products, setProducts] = useState([])
-    async function fetchAllProducts(){
-       const response = await fetch('https://fakestoreapi.com/products');
-            const result = await response.json();
-            setProducts(result)
-    }
-   useEffect(() => {
-      fetchAllProducts();
-   }, []);
+    const state = useSelector(state => state.products);
+    const {value: products, loading} = state ?? {};
+    const dispatch = useDispatch();
+   
+   if(!products?.length){
+    dispatch(fetchAllProducts());
+   }
+
+
+   function addProductToCart(product){
+     dispatch(addToCart({product, quantity:1}));
+   }
+ 
+   let filteredProducts =   category && category !== "all" ? products.filter((prod) => prod.category === category) : products;
+
+   filteredProducts = searchTerm? filteredProducts.filter(prod => prod.title.toLowerCase().includes(searchTerm.toLowerCase()))
+   : filteredProducts;
   return (
   
     <div>
         <Container sx={{py: 8}} maxWidth="lg">
             <Grid container spacing={4}>
-            // get the title price id etc from the products 
-              {products.map(({title, id, price, description, rating, image}) => 
+
+            {/* // get the title price id etc from the products  */}
+              {filteredProducts.map(({title, id, price, description, rating, image}) => 
               (<Grid item key={id} sx={12} sm={6} md={3}>
                 <Card sx={{height: "100%", display: "flex", flexDirection: "column"}}>
                     <CardMedia component="img" sx={{alignSelf: "center", width:theme.spacing(30), height:theme.spacing(30), objectFit: "contain",  pt:theme.spacing()}} 
@@ -47,8 +66,8 @@ export default function Home() {
                           overflow: "hidden",
                           textOverflow: "ellipsis",
                           display: "-webkit-box",
-                          "-webkit-line-clamp": "1",
-                          "-webkit-box-orient": "vertical",
+                          WebkitLineClamp: "1",
+                          WebkitBoxOrient: "vertical",
                         }}>{title}</Typography>
                         <Typography
                         color="text.secondary"
@@ -57,8 +76,8 @@ export default function Home() {
                           overflow: "hidden",
                           textOverflow: "ellipsis",
                           display: "-webkit-box",
-                          "-webkit-line-clamp": "2",
-                          "-webkit-box-orient": "vertical", }} 
+                          WebkitLineClamp: "2",
+                          WebkitBoxOrient: "vertical", }} 
                           >{description}
                           </Typography>
                         <Typography
@@ -70,7 +89,7 @@ export default function Home() {
                     <CardActions sx={{
                         alignSelf: "center",
                     }}>
-                        <Button variant="contained">
+                        <Button variant="contained" onClick={() => addProductToCart((title, id, description, rating, image))}>
                             <ShoppingCartSharp />
                             Add to Cart
                         </Button>
